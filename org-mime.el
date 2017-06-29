@@ -183,7 +183,7 @@ You could use either `org-up-heading-safe' or `org-back-to-heading'.")
 ;;             (org-mime-change-element-style
 ;;              "pre" (format "color: %s; background-color: %s;"
 ;;                            "#E6E1DC" "#232323"))
-;; 	    (org-mime-change-class-style
+;;          (org-mime-change-class-style
 ;;              "verse" "border-left: 2px solid gray; padding-left: 4px;")))
 
 (defun org-mime-file (ext path id)
@@ -191,12 +191,12 @@ You could use either `org-up-heading-safe' or `org-back-to-heading'.")
   (if org-mime-debug (message "org-mime-file called => %s %s %s" ext path id))
   (cl-case org-mime-library
     (mml (format (concat "<#part type=\"%s\" filename=\"%s\" "
-			  "disposition=inline id=\"<%s>\">\n<#/part>\n")
-		  ext path id))
+                          "disposition=inline id=\"<%s>\">\n<#/part>\n")
+                  ext path id))
     (semi (concat
             (format (concat "--[[%s\nContent-Disposition: "
-			    "inline;\nContent-ID: <%s>][base64]]\n")
-		    ext id)
+                            "inline;\nContent-ID: <%s>][base64]]\n")
+                    ext id)
             (base64-encode-string
              (with-temp-buffer
                (set-buffer-multibyte nil)
@@ -209,20 +209,20 @@ You could use either `org-up-heading-safe' or `org-back-to-heading'.")
 If html portion of message includes IMAGES they are wrapped in multipart/related part."
   (cl-case org-mime-library
     (mml (concat "<#multipart type=alternative><#part type=text/plain>"
-		  plain
-		  (when images "<#multipart type=related>")
-		  "<#part type=text/html>"
-		  html
-		  images
-		  (when images "<#/multipart>\n")
-		  "<#/multipart>\n"))
+                  plain
+                  (when images "<#multipart type=related>")
+                  "<#part type=text/html>"
+                  html
+                  images
+                  (when images "<#/multipart>\n")
+                  "<#/multipart>\n"))
     (semi (concat
             "--" "<<alternative>>-{\n"
             "--" "[[text/plain]]\n" plain
-	    (when images (concat "--" "<<alternative>>-{\n"))
+            (when images (concat "--" "<<alternative>>-{\n"))
             "--" "[[text/html]]\n"  html
-	    images
-	    (when images (concat "--" "}-<<alternative>>\n"))
+            images
+            (when images (concat "--" "}-<<alternative>>\n"))
             "--" "}-<<alternative>>\n"))
     (vm "?")))
 
@@ -264,8 +264,8 @@ If ARG is not NIL, use `org-mime-fixedwith-wrap' to wrap the exported text."
          (html-end (or (and region-p (region-end))
                        ;; TODO: should catch signature...
                        (point-max)))
-         (body (concat org-mime-default-header
-                       (buffer-substring html-start html-end)))
+         (body (buffer-substring html-start html-end))
+         (body-with-export-header (concat org-mime-default-header body))
          (tmp-file (make-temp-name (expand-file-name
                                     "mail" temporary-file-directory)))
          ;; because we probably don't want to export a huge style file
@@ -277,7 +277,7 @@ If ARG is not NIL, use `org-mime-fixedwith-wrap' to wrap the exported text."
          ;; to hold attachments for inline html images
          (html-and-images
           (org-mime-replace-images
-           (org-mime--export-string body
+           (org-mime--export-string body-with-export-header
                                     'html
                                     (if (fboundp 'org-export--get-inbuffer-options)
                                         (org-export--get-inbuffer-options)))
@@ -285,13 +285,13 @@ If ARG is not NIL, use `org-mime-fixedwith-wrap' to wrap the exported text."
          (html-images (unless arg (cdr html-and-images)))
          (html (org-mime-apply-html-hook
                 (if arg
-                    (format org-mime-fixedwith-wrap body)
+                    (format org-mime-fixedwith-wrap body-with-export-header)
                   (car html-and-images)))))
     (delete-region html-start html-end)
     (save-excursion
       (goto-char html-start)
       (insert (org-mime-multipart
-	       body html (mapconcat 'identity html-images "\n"))))))
+               body html (mapconcat 'identity html-images "\n"))))))
 
 (defun org-mime-apply-html-hook (html)
   "Apply HTML hook."
